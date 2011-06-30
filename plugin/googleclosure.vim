@@ -1,6 +1,6 @@
 " Requirements:
-" 1. s:ProjectSourceBasePath
-" 2. s:GoogleClosureBasePath
+" 1. g:ProjectSourceBasePath
+" 2. g:GoogleClosureBasePath
 " E.g. in project .vimrc:
 " let g:ProjectSourceBasePath = '/Users/alex/Documents/work/sampleProject/src/'
 " let g:GoogleClosureBasePath = 'goog/base.js'
