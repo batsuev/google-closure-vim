@@ -5,6 +5,8 @@
 " let g:ProjectSourceBasePath = '/Users/alex/Documents/work/sampleProject/src/'
 " let g:GoogleClosureBasePath = 'goog/base.js'
 
+let g:GoogleClosureTestTemplate = ['<!DOCTYPE html>','<html>','<head>','    <title>Google Closure Unit Tests - $PACKAGENAME$</title>','    <script src="$CLOSUREBASE$"></script>','    <script>','        goog.require("$PACKAGENAME$");','        goog.require("goog.testing.asserts");', '        goog.require("goog.testing.jsunit");', '    </script>','</head>','<body>','<script type="text/javascript">', '','</script>','</body>','</html>']
+
 function! GoogleClosure_GetBaseJSPath()
     let currentFolder = expand('%:p:h')
     let currentFolder = substitute(currentFolder, g:ProjectSourceBasePath, '', 'g')
@@ -29,7 +31,7 @@ function! GoogleClosure_MakeTest()
         echo 'Test package opened'
     else
         let sourceContent = join(readfile(expand('%')))
-        let testContent = join(readfile(expand('<sfile>:p:h').'/test_template.html'),'__SEPARATOR__')
+        let testContent = join(g:GoogleClosureTestTemplate,'__SEPARATOR__')
         
         " path to js file for tests
         let testContent = substitute(testContent, '$PACKAGEFILE\$', expand('%:r'), 'g')
