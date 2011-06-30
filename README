@@ -1,0 +1,3 @@
+At this moment only one command supported:
+
+GoogleClosureTestCreateSuite - creates html file for jsunit for current opened package
