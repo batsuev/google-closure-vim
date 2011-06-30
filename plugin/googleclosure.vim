@@ -2,19 +2,19 @@
 " 1. s:ProjectSourceBasePath
 " 2. s:GoogleClosureBasePath
 " E.g. in project .vimrc:
-" let s:ProjectSourceBasePath = '/Users/alex/Documents/work/sampleProject/src/'
-" let s:GoogleClosureBasePath = 'goog/base.js'
+" let g:ProjectSourceBasePath = '/Users/alex/Documents/work/sampleProject/src/'
+" let g:GoogleClosureBasePath = 'goog/base.js'
 
 function! GoogleClosure_GetBaseJSPath()
     let currentFolder = expand('%:p:h')
-    let currentFolder = substitute(currentFolder, s:ProjectSourceBasePath, '', 'g')
+    let currentFolder = substitute(currentFolder, g:ProjectSourceBasePath, '', 'g')
     let pos = match(currentFolder, '/')
     let res = './'
     while pos != -1
         let pos = match(currentFolder, '/', pos+1)
         let res = res.'../'
     endwhile
-    return res.s:GoogleClosureBasePath
+    return res.g:GoogleClosureBasePath
 endfunction
 
 function! GoogleClosure_GetTestFile()
