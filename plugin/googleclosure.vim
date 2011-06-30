@@ -33,14 +33,8 @@ function! GoogleClosure_MakeTest()
         let sourceContent = join(readfile(expand('%')))
         let testContent = join(g:GoogleClosureTestTemplate,'__SEPARATOR__')
         
-        " path to js file for tests
-        let testContent = substitute(testContent, '$PACKAGEFILE\$', expand('%:r'), 'g')
-
-        " package name for tests
         let packageName = matchlist(sourceContent,'goog\.provide([\s"'']\+\([^"'']\+\)')[1]
         let testContent = substitute(testContent, '$PACKAGENAME\$', packageName, 'g')
-        
-        " closure base.js path
         let testContent = substitute(testContent, '$CLOSUREBASE\$', GoogleClosure_GetBaseJSPath(), 'g')
         execute "e ".GoogleClosure_GetTestFile()
         call setline(1,split(testContent, '__SEPARATOR__'))
