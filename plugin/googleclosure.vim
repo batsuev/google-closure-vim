@@ -1,6 +1,9 @@
-" Requirenments:
+" Requirements:
 " 1. s:ProjectSourceBasePath
 " 2. s:GoogleClosureBasePath
+" E.g. in project .vimrc:
+" let s:ProjectSourceBasePath = '/Users/alex/Documents/work/sampleProject/src/'
+" let s:GoogleClosureBasePath = 'goog/base.js'
 
 function! GoogleClosure_GetBaseJSPath()
     let currentFolder = expand('%:p:h')
