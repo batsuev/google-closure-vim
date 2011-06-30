@@ -27,7 +27,7 @@ function! GoogleClosure_MakeTest()
     if (expand('%:e') != 'js')
         echo 'Current file is not js file.'
     elseif (filereadable(GoogleClosure_GetTestFile()))
-        execute "e ".GoogleClosure_GetTestFile()
+        execute 'e '.GoogleClosure_GetTestFile()
         echo 'Test package opened'
     else
         let sourceContent = join(readfile(expand('%')))
@@ -36,7 +36,7 @@ function! GoogleClosure_MakeTest()
         let packageName = matchlist(sourceContent,'goog\.provide([\s"'']\+\([^"'']\+\)')[1]
         let testContent = substitute(testContent, '$PACKAGENAME\$', packageName, 'g')
         let testContent = substitute(testContent, '$CLOSUREBASE\$', GoogleClosure_GetBaseJSPath(), 'g')
-        execute "e ".GoogleClosure_GetTestFile()
+        execute 'e '.GoogleClosure_GetTestFile()
         call setline(1,split(testContent, '__SEPARATOR__'))
     endif
 endfunction
