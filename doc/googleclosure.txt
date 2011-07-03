@@ -151,7 +151,7 @@ Google Closure JavaScript library.
 
 
 ------------------------------------------------------------------------------
-2.9. Open package
+2.9. Open package                                                  *JSPackage*
 
 :JSPackage <packageName>
     Find package in deps.js and open package file in new buffer.
