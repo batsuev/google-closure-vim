@@ -610,6 +610,14 @@ function! GoogleClosure_JS_CreateGetSet(get, set)
 
 endfunction
 
+function! GoogleClosure_JS_CreateFromString(src)
+    if (a:src =~ 'function[ ]\+')
+        call GoogleClosure_JS_CreateMethod(substitute(a:src, 'function[ ]\+', '', 'g'))
+    elseif (a:src =~ 'var[ ]\+')
+        call GoogleClosure_JS_CreateProp(substitute(a:src, 'var[ ]\+', '', 'g'))
+    endif
+endfunction
+
 command! GoogleClosureCreateTestSuite :call GoogleClosure_MakeTest()
 command! GoogleClosureCalcDeps :call GoogleClosure_CalcDeps()
 
@@ -622,3 +630,4 @@ command! -nargs=1 JSProp :call GoogleClosure_JS_CreateProp(<q-args>)
 command! JSGet :call GoogleClosure_JS_CreateGetSet(1, 0)
 command! JSSet :call GoogleClosure_JS_CreateGetSet(0, 1)
 command! JSGetSet :call GoogleClosure_JS_CreateGetSet(1, 1)
+command! -nargs=1 JS :call GoogleClosure_JS_CreateFromString(<q-args>)
