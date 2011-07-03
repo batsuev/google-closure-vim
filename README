@@ -1,14 +1,1 @@
-:GoogleClosureTestCreateSuite - creates html file for jsunit for current opened package
-:GoogleClosureCalcDeps - calculate dependencies
-
-For correct working you need to create custom .vimrc for your project and specify the following params:
-g:ProjectSourceBasePath - absolute path to the project sources
-g:GoogleClosureBasePath - relative path to google closure
-g:GoogleClosureModule - module name
-g:GoogleClosureBin - path to google closure bin folder
-
-For example:
-let g:ProjectSourceBasePath = '/Users/alex/Documents/work/testProject/src'
-let g:GoogleClosureBasePath = 'goog'
-let g:GoogleClosureModule = 'myModule'
-let g:GoogleClosureBin = '/Users/alex/Documents/tools/closure-library/closure/bin'
+see docs/googleclosure.txt
