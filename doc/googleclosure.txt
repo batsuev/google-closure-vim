@@ -20,6 +20,7 @@ CONTENTS                                              *googleclosure-contents*
             2.6.2.Set.........................|JSSet|
         2.7.JS universal command..............|JS|
         2.8.Google JavaScript Linter..........|make|
+        2.9.Open package......................|JSPackage|
     3.Options.................................|GoogleClosureOptions|
     4.About...................................|GoogleClosureAbout|
     5.License.................................|GoogleClosureLicense|
@@ -149,12 +150,23 @@ Google Closure JavaScript library.
     You can call :make for running Google JavaScript linter on current file.
 
 
+------------------------------------------------------------------------------
+2.9. Open package
+
+:JSPackage <packageName>
+    Find package in deps.js and open package file in new buffer.
+    g:GoogleClosureDeps is required.
+
+
 ==============================================================================
 3. Options                                              *GoogleClosureOptions*
 
 g:GoogleClosureAutoRequire
     Automatically add goog.require for :JSClass and :JSInterface commands if 
     parent classes or interfaces do not exist
+
+g:GoogleClosureDeps
+    Path to deps.js
 
 
 ==============================================================================

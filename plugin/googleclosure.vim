@@ -11,6 +11,7 @@
 
 let g:GoogleClosureTestTemplate = ['<!DOCTYPE html>','<html>','<head>','    <title>Google Closure Unit Tests - $PACKAGENAME$</title>','    <script src="$CLOSUREBASE$"></script>','    <script>','        goog.require("$PACKAGENAME$");','        goog.require("goog.testing.asserts");', '        goog.require("goog.testing.jsunit");', '    </script>','</head>','<body>','<script type="text/javascript">', '','</script>','</body>','</html>']
 let g:GoogleClosureAutoRequire = 1
+let g:GoogleClosureDeps = ''
 
 function! GoogleClosure_GetBasePath()
     let currentFolder = expand('%:p:h')
@@ -618,6 +619,33 @@ function! GoogleClosure_JS_CreateFromString(src)
     endif
 endfunction
 
+function! GoogleClosure_OpenPackage(packageName)
+    if g:GoogleClosureDeps == ''
+        echo 'Please specify g:GoogleClosureDeps'
+        return
+    endif
+    let content = readfile(g:GoogleClosureDeps)
+
+    let pattern = 'goog\.addDependency("[^"]\+", \['''.a:packageName.'''\]'
+    let index = match(content, pattern)
+    if index == -1
+        echo 'Can''t find '.a:packageName.' in deps.js'
+        return
+    endif
+
+    let filePattern = 'goog\.addDependency("\([^"]\+\)", \['''.a:packageName.'''\]'
+    let res = matchlist(content[index], filePattern)
+    if len(res) == 0 || res[1] == ''
+        echo 'Can''t parse deps.js'
+        return
+    endif
+
+    let path = strpart(g:GoogleClosureDeps, 0, stridx(g:GoogleClosureDeps, '/deps.js'))
+    let path .= '/'.res[1]
+
+    execute "e ".path
+endfunction
+
 command! GoogleClosureCreateTestSuite :call GoogleClosure_MakeTest()
 command! GoogleClosureCalcDeps :call GoogleClosure_CalcDeps()
 
@@ -631,3 +659,4 @@ command! JSGet :call GoogleClosure_JS_CreateGetSet(1, 0)
 command! JSSet :call GoogleClosure_JS_CreateGetSet(0, 1)
 command! JSGetSet :call GoogleClosure_JS_CreateGetSet(1, 1)
 command! -nargs=1 JS :call GoogleClosure_JS_CreateFromString(<q-args>)
+command! -nargs=1 JSPackage :call GoogleClosure_OpenPackage(<q-args>)
