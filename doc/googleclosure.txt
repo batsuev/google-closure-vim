@@ -175,6 +175,8 @@ g:GoogleClosureDeps
 Powered by Aleksandr Batsuev.
 mail: batsuev@gmail.com
 skype: alex.batsuev
+twitter: alex_batsuev
+google+: https://plus.google.com/u/0/108382165757819799147/
 
 Feel free to contact me.
 
