@@ -92,10 +92,11 @@ Google Closure JavaScript library.
     This command creates method based on <methodDef>. Examples:>
     :JSMethod myMethod
     :JSMethod myMethod:boolean
-    :JSMethod myMethod(prop1:number, prop2:string):boolean
+    :JSMethod myMethod(prop1:number; prop2:string):boolean
     :JSMethod protected abstract myMethod(prop1:number):boolean
     :JSMethod public static myMethod(param:number = 3):void
     <
+    WARNING: params separator is ;
 
 ------------------------------------------------------------------------------
 2.5. Property creation                                                *JSProp*
