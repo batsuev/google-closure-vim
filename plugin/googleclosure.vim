@@ -11,7 +11,9 @@
 
 let g:GoogleClosureTestTemplate = ['<!DOCTYPE html>','<html>','<head>','    <title>Google Closure Unit Tests - $PACKAGENAME$</title>','    <script src="$CLOSUREBASE$"></script>','    <script>','        goog.require("$PACKAGENAME$");','        goog.require("goog.testing.asserts");', '        goog.require("goog.testing.jsunit");', '    </script>','</head>','<body>','<script type="text/javascript">', '','</script>','</body>','</html>']
 let g:GoogleClosureAutoRequire = 1
-let g:GoogleClosureDeps = ''
+if !exists('g:GoogleClosureDeps')
+    let g:GoogleClosureDeps = ''
+endif
 
 function! GoogleClosure_GetBasePath()
     let currentFolder = expand('%:p:h')
@@ -31,7 +33,7 @@ function! GoogleClosure_CalcDeps()
     let calcDeps = calcDeps.' -p '.g:ProjectSourceBasePath.'/'.g:GoogleClosureModule
     let calcDeps = calcDeps.' -o deps'
     let calcDeps = calcDeps.' --output_file='.g:ProjectSourceBasePath.'/'.g:GoogleClosureBasePath.'/deps.js'
-    system(calcDeps)
+    call system(calcDeps)
     echo 'Deps file rebuilt'
 endfunction
 
@@ -619,31 +621,304 @@ function! GoogleClosure_JS_CreateFromString(src)
     endif
 endfunction
 
-function! GoogleClosure_OpenPackage(packageName)
-    if g:GoogleClosureDeps == ''
-        echo 'Please specify g:GoogleClosureDeps'
-        return
-    endif
-    let content = readfile(g:GoogleClosureDeps)
+function! GoogleClosure_GetJSFile(deps, packageName)
 
     let pattern = 'goog\.addDependency("[^"]\+", \['''.a:packageName.'''\]'
-    let index = match(content, pattern)
+    let index = match(a:deps, pattern)
     if index == -1
-        echo 'Can''t find '.a:packageName.' in deps.js'
-        return
+        throw 'Can''t find '.a:packageName.' in deps.js'
     endif
 
     let filePattern = 'goog\.addDependency("\([^"]\+\)", \['''.a:packageName.'''\]'
-    let res = matchlist(content[index], filePattern)
+    let res = matchlist(a:deps[index], filePattern)
     if len(res) == 0 || res[1] == ''
-        echo 'Can''t parse deps.js'
-        return
+        throw 'Can''t parse deps.js'
     endif
 
     let path = strpart(g:GoogleClosureDeps, 0, stridx(g:GoogleClosureDeps, '/deps.js'))
     let path .= '/'.res[1]
 
-    execute "e ".path
+    return path
+endfunction
+
+function! GoogleClosure_OpenPackage(packageName)
+    if g:GoogleClosureDeps == ''
+        throw 'Please specify g:GoogleClosureDeps'
+    endif
+    let deps = readfile(g:GoogleClosureDeps)
+    execute "e ".GoogleClosure_GetJSFile(deps, a:packageName)
+endfunction
+
+function! GoogleClosure_JS_GetInterfaceMethods(content, package, interface)
+    let strContent = join(a:content, "")
+    let regexpStr = substitute(a:package.'.'.a:interface,'\.','\\.', 'g').'\.prototype.\([^ =]\+\)[^=]*=[^f;{]*function[^(]*(\([^)]*\))'
+    let index = 1
+    let res = []
+    while index != 0
+        let methodInfo = matchlist(strContent, regexpStr, index)
+        if len(methodInfo) > 0
+            let method = {}
+            let method['name'] = methodInfo[1]
+            let method['args'] = methodInfo[2]
+            let res += [method]
+        endif
+        let index = match(strContent, regexpStr, index) + 1
+    endwhile
+    return res
+endfunction
+
+function! GoogleClosure_JS_GetClassMethods(content, package, class)
+    let strContent = join(a:content, "")
+    let regexpStr = substitute(a:package.'.'.a:class,'\.','\\.', 'g').'\.prototype.\([^ =]\+\)[^=]*=[^f;{]*function[^(]*(\([^)]*\))'
+    let index = 1
+    let res = []
+    while index != 0
+        let methodInfo = matchlist(strContent, regexpStr, index)
+        if len(methodInfo) > 0
+            let method = {}
+            let method['name'] = methodInfo[1]
+            let method['args'] = methodInfo[2]
+            let abstractRegExp = substitute(a:package.'.'.a:class,'\.','\\.', 'g').'\.prototype\.[ ]*'
+            let abstractRegExp .= method['name']
+            let abstractRegExp .= '[ ]*=[ ]*function[ ]*('
+            let abstractRegExp .= method['args'].')[ ]*{[ ]*goog\.abstractMethod();'
+            let abstract = match(strContent, abstractRegExp)
+            let method['abstract'] = abstract != -1
+            let res += [method]
+        endif
+        let index = match(strContent, regexpStr, index) + 1
+    endwhile
+    return res
+endfunction
+
+" TODO: optimization required
+function! GoogleClosure_JS_BuildClassInfo(deps, class, cache)
+    if exists('a:cache[a:class]')
+        return a:cache[a:class]
+    endif
+
+    let package = strpart(a:class, 0, strridx(a:class, '.'))
+    if package == ''
+        throw 'Can''t get package'
+    endif
+
+    let path = GoogleClosure_GetJSFile(a:deps, package)
+
+    let content = readfile(path)
+    let line = match(content, substitute(a:class,'\.','\\.','g').' = function(')
+    if line == -1
+        throw 'Class not found'
+    endif
+
+    let res = {}
+    let res['package'] = package
+    let res['name'] = strpart(a:class, strridx(a:class, '.')+1)
+
+    let commentsStart = line
+    let commentsEnd = line
+    while commentsStart > 0 && content[commentsStart] !~ '/\*\*'
+        let commentsStart -= 1
+    endwhile
+    while commentsEnd > 0 && content[commentsEnd] !~ ' \*/'
+        let commentsEnd -= 1
+    endwhile
+    if commentsStart == 0 || commentsEnd == 0
+        throw 'Can''t find docs'
+    endif
+    let def = ''
+    let i = commentsStart
+    while i <= commentsEnd
+        let def .= content[i]."\n"
+        let i += 1
+    endwhile
+
+    if def =~ '@interface'
+        let res['type'] = 'interface'
+        let res['interfaceMethods'] = GoogleClosure_JS_GetInterfaceMethods(content, res['package'], res['name'])
+    elseif def =~ '@constructor'
+        let res['type'] = 'class'
+        let res['classMethods'] = GoogleClosure_JS_GetClassMethods(content, res['package'], res['name'])
+    endif
+
+    let res['visibility'] = def =~ '@private' ? 'private' : 'public'
+    if def =~ '@extends'
+        let res['extends'] = []
+        let info = matchlist(def, '@extends {\([^}]\+\)}')
+        let res['extends'] += [GoogleClosure_JS_BuildClassInfo(a:deps, info[1], a:cache)]
+        let index = match(def, '@extends')
+        while index != 0 && len(info) > 0
+            let info = matchlist(def, '@extends {\([^}]\+\)}', index)
+            if len(info) > 0
+                let res['extends'] += [GoogleClosure_JS_BuildClassInfo(a:deps, info[1], a:cache)]
+            endif
+            let index = match(def, '@extends', index) + 1
+        endwhile
+    endif
+    if def =~ '@implements'
+        let res['implements'] = []
+        let info = matchlist(def, '@implements {\([^}]\+\)}')
+        let res['implements'] += [GoogleClosure_JS_BuildClassInfo(a:deps, info[1], a:cache)]
+        let index = match(def, '@implements')
+        while index != 0 && len(info) > 0
+            let info = matchlist(def, '@implements {\([^}]\+\)}', index)
+            if len(info) > 0
+                let res['implements'] += [GoogleClosure_JS_BuildClassInfo(a:deps, info[1], a:cache)]
+            endif
+            let index = match(def, '@implements', index) + 1
+        endwhile
+    endif
+
+    let a:cache[a:class] = res
+
+    return res
+endfunction
+
+function! GoogleClosure_JS_FillMethodsForImplement(class, methods)
+    if exists('a:class["classMethods"]')
+        for classMethod in a:class['classMethods']
+            if !classMethod['abstract']
+                if exists('a:methods[classMethod["name"]]')
+                    let a:methods[classMethod["name"]]["implemented"] = 1
+                else
+                    let info = {}
+                    let info["implemented"] = 1
+                    let info["method"] = classMethod
+                    let a:methods[classMethod["name"]] = info
+                endif
+            else
+                if !exists('a:methods[classMethod["name"]]')
+                    let info = {}
+                    let info["implemented"] = 0
+                    let info["method"] = classMethod
+                    let a:methods[classMethod["name"]] = info
+                endif
+            endif
+        endfor
+    endif
+
+    if exists('a:class["interfaceMethods"]')
+        for interfaceMethod in a:class['interfaceMethods']
+            if !exists('a:methods[interfaceMethod["name"]]')
+                let info = {}
+                let info['implemented'] = 0
+                let info['method'] = interfaceMethod
+                let a:methods[interfaceMethod['name']] = info
+            endif
+        endfor
+    endif
+
+    if exists('a:class["extends"]')
+        for class in a:class["extends"]
+            call GoogleClosure_JS_FillMethodsForImplement(class, a:methods)
+        endfor
+    endif
+
+    if exists('a:class["implements"]')
+        for class in a:class["implements"]
+            call GoogleClosure_JS_FillMethodsForImplement(class, a:methods)
+        endfor
+    endif
+endfunction
+
+function! GoogleClosure_JS_GetMethodsForImplement(classes)
+    if g:GoogleClosureDeps == ''
+        throw 'Please specify g:GoogleClosureDeps'
+    endif
+    let deps = readfile(g:GoogleClosureDeps)
+    let cache = {}
+
+    let methods = {}
+    for class in a:classes
+        let info = GoogleClosure_JS_BuildClassInfo(deps, class, cache)
+        call GoogleClosure_JS_FillMethodsForImplement(info, methods)
+    endfor
+
+    let res = []
+    for method in values(methods)
+        if !method['implemented']
+            let res += [method['method']['name'].' = function('.method['method']['args'].')']
+        endif
+    endfor
+    return res
+endfunction
+
+function! GoogleClosure_JS_Implement()
+    let lineIndex = line('.')
+    let classDefFound = 0
+    while lineIndex > 0 && !classDefFound
+        let classDefFound = getline(lineIndex) =~ '\* @constructor'
+        if !classDefFound
+            let lineIndex -= 1
+        endif
+    endwhile
+    let commentStart = lineIndex
+    while commentStart > 0 && getline(commentStart) !~ '/\*\*'
+        let commentStart -= 1
+    endwhile
+    let commentEnd = lineIndex
+    while commentEnd > 0 && commentEnd < line('.') && getline(commentEnd) !~ ' \*/'
+        let commentEnd += 1
+    endwhile
+
+    if commentStart == 0 || commentEnd == 0 || lineIndex == 0 || commentEnd == line('.')
+        echo 'Can''t find class'
+        return
+    endif
+
+    let parent = []
+
+    let def = join(getline(commentStart, commentEnd), '')
+    if def =~ '@extends'
+        let index = 0
+        let info = matchlist(def, '@extends {\([^}]\+\)}', index)
+        while len(info) > 0
+            let parent += [info[1]]
+            let index = match(def, '@extends {', index) + 1
+            let info = matchlist(def, '@extends {\([^}]\+\)}', index)
+        endwhile
+    endif
+
+    if def =~ '@implements'
+        let index = 0
+        let info = matchlist(def, '@implements {\([^}]\+\)}', index)
+        while len(info) > 0
+            let parent += [info[1]]
+            let index = match(def, '@implements {', index) + 1
+            let info = matchlist(def, '@implements {\([^}]\+\)}', index)
+        endwhile
+    endif
+
+    let class = GoogleClosure_JS_GetCurrentClass()
+
+    let methods = GoogleClosure_JS_GetMethodsForImplement(parent)
+    let fullContent = join(getline(0,line('$')),'')
+    let unimplemented = []
+    for method in methods
+        let regexpStr = class.'.prototype.'.method
+        let regexpStr = substitute(regexpStr, '\.', '\\.', 'g')
+        let regexpStr = substitute(regexpStr, ' ','[ ]\\+', 'g')
+
+        if fullContent !~ regexpStr
+            let unimplemented += [method]
+        endif
+    endfor
+
+    if len(unimplemented) == 0
+        echo 'All methods are implemented'
+        return
+    endif
+
+    let code = []
+    let code += ['']
+    for method in unimplemented
+        let code += ['/** @inheritDoc */']
+        let code += [class.'.prototype.'.method.' {']
+        let code += ['    throw new Error(''Not implemented'');']
+        let code += ['};']
+        let code += ['']
+    endfor
+
+    call GoogleClosure_InsertLines(code)
 endfunction
 
 command! GoogleClosureCreateTestSuite :call GoogleClosure_MakeTest()
@@ -660,3 +935,4 @@ command! JSSet :call GoogleClosure_JS_CreateGetSet(0, 1)
 command! JSGetSet :call GoogleClosure_JS_CreateGetSet(1, 1)
 command! -nargs=1 JS :call GoogleClosure_JS_CreateFromString(<q-args>)
 command! -nargs=1 JSPackage :call GoogleClosure_OpenPackage(<q-args>)
+command! JSImpl :call GoogleClosure_JS_Implement()
