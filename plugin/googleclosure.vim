@@ -151,7 +151,7 @@ function! GoogleClosure_JS_ParseClassDef(classDef)
     let res["visibility"] = (classInfoList[1] == '') ? 'public' : classInfoList[1]
     let res["name"] = GoogleClosure_JS_CheckName(classInfoList[2], res["visibility"])
     let res["parent"] = classInfoList[3]
-    let res["interfaces"] = (classInfoList[4] == '') ? [] : split(classInfiList[4],'[ ,;:]\+')
+    let res["interfaces"] = (classInfoList[4] == '') ? [] : split(classInfoList[4],'[ ,;:]\+')
     let res["package"] = GoogleClosure_JS_GetCurrentPackage()
     return res
 endfunction
