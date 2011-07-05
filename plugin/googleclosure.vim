@@ -1,14 +1,3 @@
-" Requirements:
-" 1. g:ProjectSourceBasePath
-" 2. g:GoogleClosureBasePath
-" 3. g:GoogleClosureBin
-" 4. g:GoogleClosureModule
-" E.g. in project .vimrc:
-" let g:ProjectSourceBasePath = '/Users/alex/Documents/work/sampleProject/src'
-" let g:GoogleClosureBasePath = 'goog'
-" let g:GoogleClosureModule = 'myModule'
-" let g:GoogleClosureBin = '/Users/alex/Documents/tools/closure/bin'
-
 let g:GoogleClosureTestTemplate = ['<!DOCTYPE html>','<html>','<head>','    <title>Google Closure Unit Tests - $PACKAGENAME$</title>','    <script src="$CLOSUREBASE$"></script>','    <script>','        goog.require("$PACKAGENAME$");','        goog.require("goog.testing.asserts");', '        goog.require("goog.testing.jsunit");', '    </script>','</head>','<body>','<script type="text/javascript">', '','</script>','</body>','</html>']
 let g:GoogleClosureAutoRequire = 1
 if !exists('g:GoogleClosureDeps')
