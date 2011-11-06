@@ -1,12 +1,13 @@
 import re
 import vim
+import os
 from string import Template
 
 PROVIDE_RE = re.compile('goog\.provide\s*\(\s*[\'\"]([^\)]+)[\'\"]\s*\)')
 PLUGIN_DIR = vim.eval('fnameescape(fnamemodify(expand("<sfile>"), ":h"))')
 
-TMPL_INTERFACE = Template(open(PLUGIN_DIR+"/templates/interface.js", "r").read())
-TMPL_CLASS = Template(open(PLUGIN_DIR+"/templates/class.js", "r").read())
+TMPL_INTERFACE = Template(open(os.path.join(PLUGIN_DIR,"templates/interface.js"), "r").read())
+TMPL_CLASS = Template(open(os.path.join(PLUGIN_DIR,"templates/class.js"), "r").read())
 
 def __getPackage():
     package = None
