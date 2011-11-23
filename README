@@ -3,3 +3,4 @@ Simple templates for Google Closure
 Place curson on the word and:
 Press Ctrl+Shift+I to transform word into interface definition
 Press Ctrl+Shift+C to transform word into class definition
+Press Ctrl+r to insert current proto
